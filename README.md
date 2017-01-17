@@ -1,2 +1,2 @@
 # XinImageLib
-Image processing library for Python
+This is my utilities for image processing in Python.
