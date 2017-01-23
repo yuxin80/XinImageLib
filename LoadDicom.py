@@ -2,17 +2,25 @@
 """
 Created on Tue Jan 17 17:36:51 2017
 
-@author: XYu4
+@author: Yu Xin
 """
 
 """
 Load the Dicom files as numpy array
+Assume all the slices of one scan are stored in the same folder
 """
+import dicom
+import numpy
+import os
+
+"""
+folder = ''
+patients = os.listdir(folder)
+patients.sort()    
+"""
+
 def LoadDicom(folderName):
-    import dicom
-    import numpy
-    import os
-    
+
     PathDicom = folderName
     lstFilesDicom = []
     for dirName, subDirList, fileList in os.walk(PathDicom):
@@ -41,4 +49,17 @@ def LoadDicom(folderName):
         ArrayDicom[:,:,lstFilesDicom.index(filename)] = ds.pixel_array
     
     return ArrayDicom
+
+def load_scan(path):
+    slices = [dicom.read_file(path+'\\'+s) for s in os.listdir(path)]
+    slices.sort(key=lambda x: int(x.InstanceNumber))
+    try:
+        slice_thickness = numpy.abs(slices[0].ImagePositionPatient[2] - slices[1].ImagePositionPatient[2])
+    except:
+        slice_thickness = numpy.abs(slices[0].SliceLocation-slices[1].SliceLocation)
+        
+    for s in slices:
+        s.SliceThickness = slice_thickness
+        
+    return slices
 
