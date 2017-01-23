@@ -12,6 +12,7 @@ Assume all the slices of one scan are stored in the same folder
 import dicom
 import numpy
 import os
+import scipy
 
 """
 folder = ''
@@ -19,7 +20,7 @@ patients = os.listdir(folder)
 patients.sort()    
 """
 
-def LoadDicom(folderName):
+def loadDicom(folderName):
 
     PathDicom = folderName
     lstFilesDicom = []
@@ -63,3 +64,36 @@ def load_scan(path):
         
     return slices
 
+def get_pixels_hu(scans):
+    image = numpy.stack([s.pixel_array for s in scans])
+    
+    image = image.astype(numpy.int16)
+    
+    image[image == -2000] =0
+    
+    intercept = scans[0].RescaleIntercept
+    
+    slope = scans[0].RescaleSlope
+    
+    if slope !=1:
+        image = slope*image.astype(numpy.float64)
+        image = image.astype(numpy.int16)
+        
+    image += numpy.int16(intercept)
+    
+    return numpy.array(image, dtype=numpy.int16)
+        
+def resample(image, scan, new_spacing=[1,1,1]):
+    # Determine current pixel spacing
+    spacing = map(float, ([scan[0].SliceThickness] + scan[0].PixelSpacing))
+    spacing = numpy.array(list(spacing))
+
+    resize_factor = spacing / new_spacing
+    new_real_shape = image.shape * resize_factor
+    new_shape = numpy.round(new_real_shape)
+    real_resize_factor = new_shape / image.shape
+    new_spacing = spacing / real_resize_factor
+    
+    image = scipy.ndimage.interpolation.zoom(image, real_resize_factor)
+    
+    return image, new_spacing
